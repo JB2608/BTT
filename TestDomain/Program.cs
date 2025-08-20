@@ -7,7 +7,7 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        await RandomDelay(10000, 30000); // Delay inicial aleatorio (10-30 segundos)
+        await RandomDelay(7000, 20000); // Delay inicial aleatorio (10-30 segundos)
 
         var tasks = new List<Task>
         {
@@ -29,7 +29,7 @@ class Program
 
         while (true)
         {
-            await RandomDelay(20000, 60000, idleProbability: 0.4); // 40% idle
+            await RandomDelay(20000, 40000, idleProbability: 0.4); // 40% idle
 
             if (IsCursorInActiveWindow())
             {
@@ -111,12 +111,12 @@ class Program
             "git status",
             "dotnet build --configuration Debug",
             "docker ps -a",
-            "npm install",
+            //"npm install",
             "cd ~/projects/my-app",
             "ls -la",
             "ssh user@server -p 2222",
-            "kubectl get pods --namespace dev",
-            "az account list",
+            //"kubectl get pods --namespace dev",
+            //"az account list",
 
             
 
@@ -147,7 +147,7 @@ class Program
 
         while (true)
         {
-            await RandomDelay(300000, 600000, idleProbability: 0.3); // Espera inicial
+            await RandomDelay(200000, 400000, idleProbability: 0.3); // Espera inicial
 
             if (IsCursorInActiveWindow() && random.Next(0, 100) < 70)
             {
@@ -174,11 +174,11 @@ class Program
                 await Task.Delay(random.Next(500, 3000));
 
                 // 30% de probabilidad de presionar Enter al final
-                if (random.Next(0, 100) < 30)
-                {
-                    input.Keyboard.KeyPress(VirtualKeyCode.RETURN);
-                    await Task.Delay(random.Next(1000, 2000));
-                }
+                //if (random.Next(0, 100) < 30)
+                //{
+                //    input.Keyboard.KeyPress(VirtualKeyCode.RETURN);
+                //    await Task.Delay(random.Next(1000, 2000));
+                //}
             }
         }
     }
@@ -193,7 +193,7 @@ class Program
 
         while (true)
         {
-            await RandomDelay(60000, 300000); // 2-5 minutos
+            await RandomDelay(30000, 60000); // 2-5 minutos
 
             if (IsCursorInActiveWindow())
             {
@@ -270,10 +270,25 @@ class Program
 
         while (true)
         {
-            await RandomDelay(30000, 240000); // 1-4 minutos
+            await RandomDelay(30000, 90000); // 1-4 minutos
 
             // Alt + Tab
-            input.Keyboard.ModifiedKeyStroke(VirtualKeyCode.LMENU, VirtualKeyCode.TAB);
+            switch (random.Next(0, 4))
+            {
+                case 1:
+                    input.Keyboard.ModifiedKeyStroke(VirtualKeyCode.LMENU, VirtualKeyCode.TAB);
+                    break;
+                case 2:
+                    input.Keyboard.ModifiedKeyStroke(VirtualKeyCode.LMENU, new[] { VirtualKeyCode.TAB, VirtualKeyCode.TAB });
+                    break;
+                case 3:
+                    input.Keyboard.ModifiedKeyStroke(VirtualKeyCode.LMENU, new[] { VirtualKeyCode.TAB, VirtualKeyCode.TAB, VirtualKeyCode.TAB });
+                    break;
+                default:
+                    input.Keyboard.ModifiedKeyStroke(VirtualKeyCode.LMENU, VirtualKeyCode.TAB);
+                    break;
+
+            }
             await Task.Delay(random.Next(500, 1500));
 
             // 30% de maximizar/restaurar (Win + ↑/↓)
