@@ -29,7 +29,7 @@ class Program
 
         while (true)
         {
-            await RandomDelay(20000, 40000, idleProbability: 0.4); // 40% idle
+            await RandomDelay(15000, 40000, idleProbability: 0.4); // 40% idle
 
             if (IsCursorInActiveWindow())
             {
@@ -147,7 +147,7 @@ class Program
 
         while (true)
         {
-            await RandomDelay(200000, 400000, idleProbability: 0.3); // Espera inicial
+            await RandomDelay(15000, 30000, idleProbability: 0.3); // Espera inicial
 
             if (IsCursorInActiveWindow() && random.Next(0, 100) < 70)
             {
@@ -193,14 +193,14 @@ class Program
 
         while (true)
         {
-            await RandomDelay(30000, 60000); // 2-5 minutos
+            await RandomDelay(120000, 300000); // 2-5 minutos
 
             if (IsCursorInActiveWindow())
             {
                 switch (random.Next(0, 4))
                 {
                     case 0: // Ctrl + S (Guardar)
-                        input.Keyboard.ModifiedKeyStroke(VirtualKeyCode.CONTROL, VirtualKeyCode.VK_S);
+                        //input.Keyboard.ModifiedKeyStroke(VirtualKeyCode.CONTROL, VirtualKeyCode.VK_S);
                         break;
                     case 1: // Ctrl + C (Copiar)
                         input.Keyboard.ModifiedKeyStroke(VirtualKeyCode.CONTROL, VirtualKeyCode.VK_C);
@@ -208,7 +208,7 @@ class Program
                     case 2: // Ctrl + C (Copiar)
                         input.Keyboard.ModifiedKeyStroke(VirtualKeyCode.CONTROL, VirtualKeyCode.TAB);
                         break;
-                    case 3: // Ctrl + C (Copiar)
+                    case 3: // Ctrl + C (Copiar)--
                         input.Keyboard.ModifiedKeyStroke(VirtualKeyCode.CONTROL, new[] { VirtualKeyCode.TAB, VirtualKeyCode.TAB });
                         break;
                     case 4: // Ctrl + C (Copiar)
@@ -270,7 +270,7 @@ class Program
 
         while (true)
         {
-            await RandomDelay(30000, 90000); // 1-4 minutos
+            await RandomDelay(120000, 300000); // 1-4 minutos
 
             // Alt + Tab
             switch (random.Next(0, 4))
