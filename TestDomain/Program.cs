@@ -9,7 +9,7 @@ class Program
 {
     // ===== FLAGS DE DEPURACIÓN (cámbialas aquí) =====
     private const bool UseFitts = true;               // true = velocidad según distancia (Ley de Fitts), false = estático
-    private const Profile ActiveProfile = Profile.Low; // Low | Normal | Fast
+    private const Profile ActiveProfile = Profile.Normal; // Low | Normal | Fast
     private const bool UseRealCursorOrigin = true; // true = usa GetCursorPos(); false = usa centro de la pantalla
     // ===== CONFIG BASE (se sobreescribe por perfil) =====
     private static double MouseMinSpeedPxPerSec = 700;     // si UseFitts=false, se usa rango aleatorio [Min..Max]
