@@ -9,7 +9,7 @@ class Program
 {
     // ===== FLAGS DE DEPURACIÓN (cámbialas aquí) =====
     private const bool UseFitts = true;               // true = velocidad según distancia (Ley de Fitts), false = estático
-    private const Profile ActiveProfile = Profile.Normal; // Low | Normal | Fast
+    private const Profile ActiveProfile = Profile.Low; // Low | Normal | Fast
     private const bool UseRealCursorOrigin = true; // true = usa GetCursorPos(); false = usa centro de la pantalla
     // ===== CONFIG BASE (se sobreescribe por perfil) =====
     private static double MouseMinSpeedPxPerSec = 700;     // si UseFitts=false, se usa rango aleatorio [Min..Max]
@@ -291,7 +291,43 @@ class Program
             "git status",
             "dotnet build --configuration Debug",
             "docker ps -a",
-            $"// DEBUG: Variable value = {Random.Shared.Next(1,100)}"
+            $"// DEBUG: Variable value = {Random.Shared.Next(1,100)}",
+            // ==== C# Snippets ====
+            "app.MapGet(\"/health\", () => Results.Ok(new { Status = \"Healthy\" }));",
+            "builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connStr));",
+            "record User(int Id, string Name, string Email);",
+            "await using var scope = provider.CreateAsyncScope();",
+            "var token = jwtHandler.CreateToken(userClaims);",
+            "return Results.BadRequest(new { Error = \"Invalid credentials\" });",
+            "if (!ModelState.IsValid) return BadRequest(ModelState);",
+            "logger.LogInformation(\"Processing request {Id}\", id);",
+
+            // ==== LINQ / EF Core ====
+            "var users = await context.Users.Where(u => u.IsActive).ToListAsync();",
+            "bool exists = await context.Orders.AnyAsync(o => o.Id == orderId);",
+            "var stats = data.GroupBy(x => x.Type).Select(g => new { g.Key, Count = g.Count() });",
+
+            // ==== Comments ====
+            "// TODO: Refactor this service",
+            "// FIXME: Handle null reference properly",
+            "// NOTE: Validate JWT expiration",
+            $"// DEBUG: Iteration {Random.Shared.Next(1, 100)}",
+            "/* OPTIMIZE: Index missing on Email column */",
+
+            // ==== Terminal commands ====
+            "git pull origin main",
+            "dotnet watch run",
+            "dotnet ef migrations add Init",
+            "dotnet ef database update",
+            "docker compose up -d",
+            "curl http://localhost:5000/health",
+            "ls -la",
+            "ps aux | grep dotnet",
+
+            // ==== Config snippets ====
+            "{ \"Logging\": { \"LogLevel\": { \"Default\": \"Information\" } } }",
+            "builder.Services.AddCors(o => o.AllowAnyOrigin());",
+            "app.UseHttpsRedirection();",
         };
 
         while (!ct.IsCancellationRequested)
