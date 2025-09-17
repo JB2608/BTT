@@ -9,7 +9,7 @@ class Program
 {
     // ===== FLAGS DE DEPURACIÓN (cámbialas aquí) =====
     private const bool UseFitts = true;               // true = velocidad según distancia (Ley de Fitts), false = estático
-    private const Profile ActiveProfile = Profile.Normal; // Low | Normal | Fast
+    private const Profile ActiveProfile = Profile.Low; // Low | Normal | Fast
     private const bool UseRealCursorOrigin = true; // true = usa GetCursorPos(); false = usa centro de la pantalla
     // ===== CONFIG BASE (se sobreescribe por perfil) =====
     private static double MouseMinSpeedPxPerSec = 700;     // si UseFitts=false, se usa rango aleatorio [Min..Max]
@@ -25,7 +25,7 @@ class Program
     private static int TypingMaxDelayMs = 220;
 
     // Ritmos (ajusta para “Low Activity” subiendo tiempos)
-    private static int MouseMinWaitMs = 15000, MouseMaxWaitMs = 30000;
+    private static int MouseMinWaitMs = 30000, MouseMaxWaitMs = 120000;
     private static int TypeMinWaitMs = 10000, TypeMaxWaitMs = 40000;
     private static int ShortMinWaitMs = 120000, ShortMaxWaitMs = 300000;
     private static int OpenMinWaitMs = 300000, OpenMaxWaitMs = 900000;
@@ -70,11 +70,13 @@ class Program
                 MouseMinSpeedPxPerSec = 400; MouseMaxSpeedPxPerSec = 1600; MouseJitterPx = 0.8;
                 ClickProbability = 0.35; ScrollAfterClickProb = 0.25; RightClickProb = 0.15;
                 TypingErrorProbability = 0.05; TypingMinDelayMs = 60; TypingMaxDelayMs = 240;
-                MouseMinWaitMs = 20000; MouseMaxWaitMs = 45000;
+                MouseMinWaitMs = 30000; MouseMaxWaitMs = 120000;
                 TypeMinWaitMs = 15000; TypeMaxWaitMs = 60000;
-                ShortMinWaitMs = 150000; ShortMaxWaitMs = 360000;
-                OpenMinWaitMs = 420000; OpenMaxWaitMs = 1020000;
-                SwitchMinWaitMs = 180000; SwitchMaxWaitMs = 420000;
+                ShortMinWaitMs = 900000; ShortMaxWaitMs = 2400000;
+                //OpenMinWaitMs = 420000; OpenMaxWaitMs = 1020000;
+                OpenMinWaitMs = 900000; OpenMaxWaitMs = 2400000;
+                //SwitchMinWaitMs = 180000; SwitchMaxWaitMs = 420000;
+                SwitchMinWaitMs = 900000; SwitchMaxWaitMs = 2400000;
                 break;
 
             case Profile.Fast:
