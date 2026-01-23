@@ -20,16 +20,17 @@ class Program
     private static double ScrollAfterClickProb = 0.30;
     private static double RightClickProb = 0.20;
 
-    private static double TypingErrorProbability = 0.06;
+    private static double TypingErrorProbability = 0.02;
     private static int TypingMinDelayMs = 50;
     private static int TypingMaxDelayMs = 220;
 
     // Ritmos (ajusta para “Low Activity” subiendo tiempos)
-    private static int MouseMinWaitMs = 30000, MouseMaxWaitMs = 120000;
-    private static int TypeMinWaitMs = 10000, TypeMaxWaitMs = 40000;
+    private static int MouseMinWaitMs = 30000, MouseMaxWaitMs = 150000;
+    private static int TypeMinWaitMs = 10000, TypeMaxWaitMs = 45000;
     private static int ShortMinWaitMs = 120000, ShortMaxWaitMs = 300000;
     private static int OpenMinWaitMs = 300000, OpenMaxWaitMs = 900000;
     private static int SwitchMinWaitMs = 120000, SwitchMaxWaitMs = 300000;
+
 
     // ===== Compartidos =====
     private static readonly InputSimulator Input = new();
@@ -48,7 +49,8 @@ class Program
         var tasks = new[]
         {
             MoveMouseWithClicksAndScroll(Cts.Token),
-            SimulateKeyboardActivity(Cts.Token),
+            //SimulateKeyboardActivity(Cts.Token),
+            SimulateKeyboardActivityV3(Cts.Token),
             SimulateShortcuts(Cts.Token),
             OpenAndClosePrograms(Cts.Token),
             SwitchWindowsRandomly(Cts.Token)
@@ -97,8 +99,8 @@ class Program
                 MouseMinWaitMs = 15000; MouseMaxWaitMs = 30000;
                 TypeMinWaitMs = 10000; TypeMaxWaitMs = 40000;
                 ShortMinWaitMs = 120000; ShortMaxWaitMs = 300000;
-                OpenMinWaitMs = 300000; OpenMaxWaitMs = 900000;
-                SwitchMinWaitMs = 120000; SwitchMaxWaitMs = 300000;
+                OpenMinWaitMs = 3000000; OpenMaxWaitMs = 9000000;
+                SwitchMinWaitMs = 1200000; SwitchMaxWaitMs = 24000000;
                 break;
         }
     }
@@ -364,6 +366,331 @@ class Program
             await Task.Delay(Random.Shared.Next(500, 3000), ct);
         }
     }
+    static async Task SimulateKeyboardActivityV2(CancellationToken ct)
+    {
+        var phrases = new[]
+        {
+        "var list = new List<string>();",
+        "Console.WriteLine(\"Hello, world!\");",
+        "public class Response<T> { public T? Data { get; set; } }",
+        "git status",
+        "dotnet build --configuration Debug",
+        "docker ps -a",
+        $"// DEBUG: Variable value = {Random.Shared.Next(1,100)}",
+        "app.MapGet(\"/health\", () => Results.Ok(new { Status = \"Healthy\" }));",
+        "builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connStr));",
+        "record User(int Id, string Name, string Email);",
+        "await using var scope = provider.CreateAsyncScope();",
+        "var token = jwtHandler.CreateToken(userClaims);",
+        "return Results.BadRequest(new { Error = \"Invalid credentials\" });",
+        "if (!ModelState.IsValid) return BadRequest(ModelState);",
+        "logger.LogInformation(\"Processing request {Id}\", id);",
+        "var users = await context.Users.Where(u => u.IsActive).ToListAsync();",
+        "bool exists = await context.Orders.AnyAsync(o => o.Id == orderId);",
+        "var stats = data.GroupBy(x => x.Type).Select(g => new { g.Key, Count = g.Count() });",
+        "// TODO: Refactor this service",
+        "// FIXME: Handle null reference properly",
+        "// NOTE: Validate JWT expiration",
+        $"// DEBUG: Iteration {Random.Shared.Next(1, 100)}",
+        "/* OPTIMIZE: Index missing on Email column */",
+        "git pull origin main",
+        "dotnet watch run",
+        "dotnet ef migrations add Init",
+        "dotnet ef database update",
+        "docker compose up -d",
+        "curl http://localhost:5000/health",
+        "ls -la",
+        "ps aux | grep dotnet",
+        "{ \"Logging\": { \"LogLevel\": { \"Default\": \"Information\" } } }",
+        "builder.Services.AddCors(o => o.AllowAnyOrigin());",
+        "app.UseHttpsRedirection();",
+    };
+
+        // Probabilidades “humanas”
+        const double chanceToStartTyping = 0.35;          // ~35% de ciclos empiezan a escribir algo
+        const double chanceToStopMidLine = 0.10;          // a veces se interrumpe
+        const double chanceToPauseMidLine = 0.12;         // pausa de “pensar” a media línea
+        const double chanceToLeaveTypo = 0.25;            // 25% de los typos se quedan sin corregir
+        const double chanceToHitEnter = 0.55;             // al terminar una línea, a veces enter
+        const double chanceToTypeMultipleLines = 0.35;    // a veces 2–3 líneas en una sesión
+
+        while (!ct.IsCancellationRequested)
+        {
+            await RandomDelay(TypeMinWaitMs, TypeMaxWaitMs, ct, idleProbability: 0.35);
+
+            if (ct.IsCancellationRequested) break;
+            if (!IsCursorInActiveWindow()) continue;
+
+            // No escribir siempre. Aun con cursor activo, muchas veces no haces nada.
+            if (Random.Shared.NextDouble() > chanceToStartTyping)
+                continue;
+
+            // “Modo” de velocidad para esta sesión
+            var (minDelay, maxDelay) = PickTypingTempo();
+
+            // Pausa ligera antes de empezar (como alinear ideas)
+            await Task.Delay(Random.Shared.Next(120, 650), ct);
+
+            int linesThisSession = 1;
+            if (Random.Shared.NextDouble() < chanceToTypeMultipleLines)
+                linesThisSession = Random.Shared.Next(2, 4); // 2 o 3 líneas
+
+            for (int line = 0; line < linesThisSession && !ct.IsCancellationRequested; line++)
+            {
+                if (!IsCursorInActiveWindow()) break;
+
+                var text = phrases[Random.Shared.Next(phrases.Length)];
+
+                // A veces solo escribe parte de la línea (se detiene / cambia de foco / etc.)
+                int maxChars = text.Length;
+                if (Random.Shared.NextDouble() < chanceToStopMidLine)
+                    maxChars = Math.Max(1, (int)(text.Length * Random.Shared.NextDouble() * 0.75));
+
+                for (int i = 0; i < maxChars && !ct.IsCancellationRequested; i++)
+                {
+                    if (!IsCursorInActiveWindow()) break;
+
+                    char c = text[i];
+
+                    // Pausa ocasional a mitad (como pensar / revisar)
+                    if (i > 3 && Random.Shared.NextDouble() < chanceToPauseMidLine)
+                        await Task.Delay(Random.Shared.Next(250, 1100), ct);
+
+                    // Typo ocasional (solo en letras/dígitos)
+                    if (Random.Shared.NextDouble() < TypingErrorProbability && char.IsLetterOrDigit(c))
+                    {
+                        char wrong = RandomLetterOrDigit();
+
+                        await WithInputAsync(sim =>
+                        {
+                            sim.Keyboard.TextEntry(wrong.ToString());
+                            return Task.CompletedTask;
+                        });
+
+                        await Task.Delay(Random.Shared.Next(60, 220), ct);
+
+                        // A veces lo deja, a veces corrige (1–2 backspaces)
+                        if (Random.Shared.NextDouble() > chanceToLeaveTypo)
+                        {
+                            int backspaces = Random.Shared.Next(1, 3);
+                            await WithInputAsync(sim =>
+                            {
+                                for (int b = 0; b < backspaces; b++)
+                                    sim.Keyboard.KeyPress(VirtualKeyCode.BACK);
+
+                                return Task.CompletedTask;
+                            });
+
+                            await Task.Delay(Random.Shared.Next(80, 260), ct);
+                        }
+                        else
+                        {
+                            // Si lo deja, muchas veces no teclea inmediatamente “perfecto”,
+                            // deja pasar un poquito y sigue.
+                            await Task.Delay(Random.Shared.Next(120, 400), ct);
+                        }
+                    }
+
+                    await WithInputAsync(sim =>
+                    {
+                        sim.Keyboard.TextEntry(c.ToString());
+                        return Task.CompletedTask;
+                    });
+
+                    int delay = Random.Shared.Next(minDelay, maxDelay);
+
+                    // Pausas naturales por puntuación/espacios
+                    if (c is ' ' or '.' or ',' or ';' or ':' or ')' or '}' or ']')
+                        delay += Random.Shared.Next(80, 320);
+
+                    // A veces un micro “rush” (tecleo rápido unos chars)
+                    if (Random.Shared.NextDouble() < 0.06)
+                        delay = Math.Max(15, delay / 2);
+
+                    await Task.Delay(delay, ct);
+                }
+
+                if (ct.IsCancellationRequested) break;
+
+                // Al terminar una línea, a veces presiona Enter, a veces no.
+                if (Random.Shared.NextDouble() < chanceToHitEnter)
+                {
+                    await WithInputAsync(sim =>
+                    {
+                        sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
+                        return Task.CompletedTask;
+                    });
+
+                    await Task.Delay(Random.Shared.Next(150, 850), ct);
+                }
+                else
+                {
+                    await Task.Delay(Random.Shared.Next(250, 1200), ct);
+                }
+            }
+
+            // Pausa final de sesión
+            await Task.Delay(Random.Shared.Next(600, 2800), ct);
+        }
+
+        static (int minDelay, int maxDelay) PickTypingTempo()
+        {
+            // 0: normal, 1: lento, 2: rápido
+            int mode = Random.Shared.Next(0, 3);
+
+            return mode switch
+            {
+                1 => (TypingMinDelayMs + 35, TypingMaxDelayMs + 120), // lento
+                2 => (Math.Max(10, TypingMinDelayMs - 25), Math.Max(25, TypingMaxDelayMs - 60)), // rápido
+                _ => (TypingMinDelayMs, TypingMaxDelayMs) // normal
+            };
+        }
+    }
+    static async Task SimulateKeyboardActivityV3(CancellationToken ct, int seed = 12345)
+    {
+        // Random reproducible para que puedas depurar (mismo patrón por seed)
+        var rnd = new Random(seed);
+
+        // Ajustes orientados a PRUEBAS (evita incoherencias / borrado excesivo)
+        double errorProbability = Math.Clamp(TypingErrorProbability, 0.0, 0.03); // cap a 3% para no destrozar texto
+        int minDelay = Math.Max(5, TypingMinDelayMs);
+        int maxDelay = Math.Max(minDelay + 1, TypingMaxDelayMs);
+
+        var phrases = new[]
+        {
+        "var list = new List<string>();",
+        "public class Response<T> { public T? Data { get; set; } }",
+        "git status",
+        "docker ps -a",
+        $"// DEBUG: Variable value = {Random.Shared.Next(1,100)}",
+        "app.MapGet(\"/health\", () => Results.Ok(new { Status = \"Healthy\" }));",
+        "builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connStr));",
+        "record User(int Id, string Name, string Email);",
+        "await using var scope = provider.CreateAsyncScope();",
+        "var token = jwtHandler.CreateToken(userClaims);",
+        "return Results.BadRequest(new { Error = \"Exception\" });",
+        "if (!ModelState.IsValid) return BadRequest(ModelState);",
+        "logger.LogInformation(\"Processing request {Id}\", id);",
+        "var users = await context.Users.Where(u => u.IsActive).ToListAsync();",
+        "bool exists = await context.Orders.AnyAsync(o => o.Id == orderId);",
+        "var stats = data.GroupBy(x => x.Type).Select(g => new { g.Key, Count = g.Count() });",
+        "// TODO: Refactor this service",
+        "// FIXME: Handle null reference properly",
+        "// NOTE: Validate JWT expiration",
+        $"// DEBUG: Iteration {Random.Shared.Next(1, 100)}",
+        "/* OPTIMIZE: Index missing on column */",
+        "git pull origin main",
+        "dotnet watch run",
+        "dotnet ef migrations add Init",
+        "dotnet ef database update",
+        "docker compose up -d",
+        "curl http://localhost:5000/health",
+        "ls -la",
+        "ps aux | grep dotnet",
+        "{ \"Logging\": { \"LogLevel\": { \"Default\": \"Information\" } } }",
+        "builder.Services.AddCors(o => o.AllowAnyOrigin());",
+        "app.UseHttpsRedirection();",
+    };
+
+        while (!ct.IsCancellationRequested)
+        {
+            // Espera base entre intentos (tu helper)
+            await RandomDelay(TypeMinWaitMs, TypeMaxWaitMs, ct, idleProbability: 0.35);
+            if (ct.IsCancellationRequested) break;
+
+            // Solo si está en la ventana activa
+            if (!IsCursorInActiveWindow())
+                continue;
+
+            // Probabilidad de que en este ciclo se escriba algo (ajústalo a tu gusto)
+            // 0.35 ~= 35% de intentos escribe
+            if (rnd.NextDouble() > 0.35)
+                continue;
+
+            string text = phrases[rnd.Next(phrases.Length)];
+
+            // Para pruebas: a veces escribe parcial (simula interrupción del flujo de prueba, no “humanización”)
+            // 15% escribe solo una parte de la frase
+            int maxChars = text.Length;
+            if (rnd.NextDouble() < 0.15)
+            {
+                maxChars = Math.Max(1, (int)(text.Length * (0.25 + rnd.NextDouble() * 0.50))); // 25%..75%
+            }
+
+            // Limitar errores por línea para que no se vuelva basura
+            bool typoUsedThisLine = false;
+
+            // Pausa corta antes de empezar (estabilidad)
+            await Task.Delay(rnd.Next(80, 400), ct);
+
+            for (int i = 0; i < maxChars && !ct.IsCancellationRequested; i++)
+            {
+                if (!IsCursorInActiveWindow())
+                    break;
+
+                char c = text[i];
+
+                // Error ocasional (máx 1 por línea) y SOLO sobre letras/dígitos
+                if (!typoUsedThisLine &&
+                    rnd.NextDouble() < errorProbability &&
+                    char.IsLetterOrDigit(c))
+                {
+                    typoUsedThisLine = true;
+
+                    char wrong = RandomLetterOrDigit();
+
+                    await WithInputAsync(sim =>
+                    {
+                        sim.Keyboard.TextEntry(wrong.ToString());
+                        return Task.CompletedTask;
+                    });
+
+                    // Espera breve
+                    await Task.Delay(rnd.Next(60, 160), ct);
+
+                    // Corrección acotada: 1 backspace (evita "borra mucho")
+                    await WithInputAsync(sim =>
+                    {
+                        sim.Keyboard.KeyPress(VirtualKeyCode.BACK);
+                        return Task.CompletedTask;
+                    });
+
+                    await Task.Delay(rnd.Next(60, 160), ct);
+                }
+
+                // Escribir el caracter real
+                await WithInputAsync(sim =>
+                {
+                    sim.Keyboard.TextEntry(c.ToString());
+                    return Task.CompletedTask;
+                });
+
+                int delay = rnd.Next(minDelay, maxDelay);
+
+                // Pausa extra por separación/puntuación para evitar “chorro” continuo
+                if (c is ' ' or '.' or ',' or ';' or ':' or ')' or '}' or ']')
+                    delay += rnd.Next(60, 220);
+
+                await Task.Delay(delay, ct);
+            }
+
+            if (ct.IsCancellationRequested) break;
+
+            // Para pruebas: a veces Enter, a veces no
+            if (rnd.NextDouble() < 0.55)
+            {
+                await WithInputAsync(sim =>
+                {
+                    sim.Keyboard.KeyPress(VirtualKeyCode.RETURN);
+                    return Task.CompletedTask;
+                });
+            }
+
+            // Pausa post-línea
+            await Task.Delay(rnd.Next(400, 1800), ct);
+        }
+    }
+
 
     static char RandomLetterOrDigit()
     {
